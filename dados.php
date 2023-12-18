@@ -1,96 +1,146 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizar Dados</title>
+    <title>Importar e Atualizar Dados</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
+
 <body>
 
-<div class="container mt-5">
-    <form method="get" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
-        <div class="form-row">
-            <div class="form-group col-md-4">
-                <label for="convenioFilter">Filtrar por Convenio:</label>
-                <select class="form-control" id="convenioFilter" name="convenioFilter">
-                    <option value="TODOS">TODOS</option>
-                    <option value="FAETEC">FAETEC</option>
-                    <option value="FIA">FIA</option>
-                </select>
-            </div>
-            <div class="form-group col-md-4">
-                <label for="searchTerm">Buscar por Nome ou Email:</label>
-                <input type="text" class="form-control" id="searchTerm" name="searchTerm" placeholder="Digite o Nome ou Email">
-            </div>
-            <div class="form-group col-md-2">
-                <button type="submit" class="btn btn-primary mt-4">Filtrar</button>
-            </div>
-        </div>
-    </form>
+    <div class="container mt-5">
+        <?php
 
-    <?php
-    // Conecta ao banco de dados
-    $servername = "localhost";
-    $username = "root";
-    $password = "";
-    $dbname = "pebit";
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            // Substitua 'SEU_API_KEY' pela chave de API do Google Sheets
+            $apiKey = 'AIzaSyDq1_3tOQdeM3besaeg1-O4coztRsL3FZY';
 
-    $conn = new mysqli($servername, $username, $password, $dbname);
+            // ID da planilha do Google Sheets
+            $spreadsheetId = '1WAxnZPqgbTAvqtTampi34xDkL-3-W13mnbIo2ACcIm4';
 
-    // Verifica a conexão
-    if ($conn->connect_error) {
-        die("Erro na conexão: " . $conn->connect_error);
-    }
+            // Range específico
+            $range = 'estagiario!A2:C';
 
-    // Filtros
-    $convenioFilter = isset($_GET['convenioFilter']) ? $_GET['convenioFilter'] : 'TODOS';
-    $searchTerm = isset($_GET['searchTerm']) ? $_GET['searchTerm'] : '';
+            // URL da API do Google Sheets
+            $url = "https://sheets.googleapis.com/v4/spreadsheets/{$spreadsheetId}/values/{$range}?key={$apiKey}";
 
-    $sqlFilters = array();
-    if ($convenioFilter !== 'TODOS') {
-        $sqlFilters[] = "Convenio = '$convenioFilter'";
-    }
-    if (!empty($searchTerm)) {
-        $sqlFilters[] = "(Nome LIKE '%$searchTerm%' OR Email LIKE '%$searchTerm%')";
-    }
+            // Faz a requisição para obter os dados
+            $response = file_get_contents($url);
 
-    $sqlFilter = (!empty($sqlFilters)) ? " WHERE " . implode(" AND ", $sqlFilters) : '';
-    $orderBy = " ORDER BY Nome"; // Adicionamos a cláusula ORDER BY para ordenar por nome
+            // Converte a resposta JSON para um array associativo
+            $data = json_decode($response, true);
 
-    // Consulta todos os dados da tabela com ou sem filtro
-    $result = $conn->query("SELECT * FROM estagiarios" . $sqlFilter . $orderBy);
+            // Verifica se há dados
+            if (isset($data['values'])) {
+                // Conecta ao seu banco de dados (substitua os detalhes do banco de dados)
+                $servername = "localhost";
+                $username = "root";
+                $password = "";
+                $dbname = "pebit";
 
-    if ($result->num_rows > 0) {
-        echo '<table class="table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nome</th>
-                        <th>Email</th>
-                        <th>Convenio</th>
-                    </tr>
-                </thead>
-                <tbody>';
+                $conn = new mysqli($servername, $username, $password, $dbname);
 
-        while ($row = $result->fetch_assoc()) {
-            echo '<tr>
-                    <td>' . $row['id'] . '</td>
-                    <td>' . $row['Nome'] . '</td>
-                    <td>' . $row['Email'] . '</td>
-                    <td>' . $row['Convenio'] . '</td>
-                  </tr>';
+                // Verifica a conexão
+                if ($conn->connect_error) {
+                    die("Erro na conexão: " . $conn->connect_error);
+                }
+
+                // Mensagem de sucesso ou erro
+                $successMessage = "Dados importados, atualizados ou excluídos com sucesso!";
+                $errorMessage = "";
+
+                // Se a planilha estiver vazia, limpe todo o banco de dados
+                if (empty($data['values'])) {
+                    $truncateSql = "TRUNCATE TABLE estagiarios";
+                    if ($conn->query($truncateSql) === FALSE) {
+                        $errorMessage = "Erro ao limpar o banco de dados: " . $conn->error;
+                    } else {
+                        $successMessage = "Banco de dados limpo com sucesso.";
+                    }
+                } else {
+                    // Obtém todos os e-mails presentes na planilha
+                    $emailsNaPlanilha = array_column($data['values'], 1);
+
+                    // Obtém todos os e-mails presentes no banco de dados
+                    $result = $conn->query("SELECT Email FROM estagiarios");
+                    $emailsNoBanco = array();
+                    while ($row = $result->fetch_assoc()) {
+                        $emailsNoBanco[] = $row['Email'];
+                    }
+
+                    // Identifica e exclui os e-mails que estão no banco de dados, mas não na planilha
+                    $emailsExcluir = array_diff($emailsNoBanco, $emailsNaPlanilha);
+                    foreach ($emailsExcluir as $emailExcluir) {
+                        $excluirSql = "DELETE FROM estagiarios WHERE Email = '$emailExcluir'";
+                        if ($conn->query($excluirSql) === FALSE) {
+                            $errorMessage = "Erro ao excluir dados: " . $conn->error;
+                        } else {
+                            $successMessage .= " $emailExcluir removido do sistema.";
+                        }
+                    }
+
+                    // Itera sobre os dados e insere/atualiza no banco de dados
+                    foreach ($data['values'] as $row) {
+                        // Verifica se o array possui pelo menos 3 elementos (índices 0, 1 e 2)
+                        if (count($row) >= 3) {
+                            $nome = $row[0];
+                            $email = $row[1];
+                            $convenio = $row[2];
+
+                            // Verifica se o e-mail já existe no banco de dados
+                            $result = $conn->query("SELECT * FROM estagiarios WHERE Email = '$email'");
+                            if ($result->num_rows > 0) {
+                                // Se existir, realiza um UPDATE
+                                $updateSql = "UPDATE estagiarios SET Nome = '$nome', Convenio = '$convenio' WHERE Email = '$email'";
+                                if ($conn->query($updateSql) === FALSE) {
+                                    $errorMessage = "Erro ao atualizar dados: " . $conn->error;
+                                } else {
+                                    $successMessage = "$successMessage";
+                                }
+                            } else {
+                                // Se não existir, realiza um INSERT
+                                $insertSql = "INSERT INTO estagiarios (Nome, Email, Convenio) VALUES ('$nome', '$email', '$convenio')";
+                                if ($conn->query($insertSql) === FALSE) {
+                                    if ($conn->errno == 1062) { // Código de erro para duplicata (pode variar dependendo do MySQL)
+                                        $errorMessage = "Erro: E-mail ou Nome já existente.";
+                                    } else {
+                                        $errorMessage = "Erro ao inserir dados: " . $conn->error;
+                                    }
+                                } else {
+                                    $successMessage .= " $nome adicionado no sistema.";
+                                }
+                            }
+                        } else {
+                            // Caso a linha da planilha não tenha todos os elementos esperados, exibe uma mensagem de erro
+                            $errorMessage = "Erro: A linha da planilha não possui todos os elementos esperados.";
+                        }
+                    }
+                }
+
+                // Fecha a conexão
+                $conn->close();
+
+                // Exibe mensagens
+                if ($errorMessage !== "") {
+                    echo '<div class="alert alert-danger" role="alert">' . $errorMessage . '</div>';
+                } elseif ($successMessage !== "") {
+                    echo '<div class="alert alert-success" role="alert">' . $successMessage . '</div>';
+                }
+
+                echo '<script>setTimeout(function(){ window.location.href = "' . $_SERVER['PHP_SELF'] . '"; }, 3000);</script>';
+            }
         }
 
-        echo '</tbody></table>';
-    } else {
-        echo '<div class="alert alert-warning" role="alert">Sem dados na tabela.</div>';
-    }
+        ?>
 
-    // Fecha a conexão
-    $conn->close();
-    ?>
-</div>
+        <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+            <button type="submit" class="btn btn-primary">Importar Dados</button>
+            <a href="banco.php" class="btn btn-secondary">Acessar Banco de Dados</a>
+        </form>
+    </div>
 
 </body>
+
 </html>
