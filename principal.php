@@ -1,3 +1,21 @@
+<?php
+session_start();
+
+// Verifica se o parâmetro 'authenticated' está presente na URL
+if (isset($_GET['authenticated']) && $_GET['authenticated'] === 'true') {
+    $_SESSION['authenticated'] = true;
+}
+
+// Verifica se o usuário está autenticado
+if (!isset($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
+    // Se não estiver autenticado, redireciona para a página de login com uma mensagem de erro
+    header("Location: login.php");
+    exit();
+}
+
+$authenticated = isset($_GET['authenticated']) ? $_GET['authenticated'] : '';
+$name = isset($_GET['name']) ? $_GET['name'] : '';
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -9,7 +27,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
-    <title>CETREINA | PEBIT</title>
+
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -65,7 +84,6 @@
             margin-top: 8rem;
         }
 
-
         .cetreina {
             width: 50%;
             margin-top: 1rem;
@@ -75,9 +93,13 @@
         }
 
         .botoes {
-            margin-top: 5%;
+            margin-top: 10vh;
             margin-left: 2%;
-            text-align: left;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            /* Adiciona quebra de linha quando não houver espaço suficiente */
         }
 
         .botoes button {
@@ -87,15 +109,30 @@
             border: none;
             border-radius: 5px;
             transition: background-color 0.3s ease;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            /* Adiciona espaço abaixo dos botões (ajuste conforme necessário) */
             padding: 0.5rem 1rem;
             font-size: 1rem;
+        }
+
+        /* Adiciona uma consulta de mídia para ajustar o layout em telas menores */
+        @media (max-width: 768px) {
+            .botoes {
+                flex-direction: column;
+                /* Muda para uma coluna em telas menores */
+            }
+
+            .botoes button {
+                margin-right: 0;
+                margin-bottom: 0.5rem;
+            }
         }
 
         .botoes button:hover {
             background-color: #FF8C00;
             /* Laranja mais escuro no hover */
         }
-
 
         @media screen and (max-width: 360px) {
             .logonav {
@@ -193,7 +230,6 @@
 
         }
 
-
         .greeting {
             color: #FF8300;
             font-family: Inter;
@@ -213,12 +249,100 @@
             font-weight: 500;
             color: #FF8300;
         }
+
+        .custom-alert {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            margin-left: 2%;
+            margin-top: 1rem;
+        }
+
+        .custom-alert.alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .custom-alert.alert-success {
+            color: #856404;
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+        }
+
+        /* Adicione esses estilos ao seu CSS existente */
+        #modoNoturnoBtn {
+            display: flex;
+            align-items: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #FF8300;
+            transition: all 0.4s ease;
+        }
+
+        #modoNoturnoIcon {
+            position: absolute;
+            width: 3.4em;
+            height: auto;
+            margin-left: 93%;
+            margin-top: 3%;
+            color: #FF8300;
+            transition: all 0.4s ease;
+        }
+
+        .modo-noturno #modoNoturnoIcon {
+            content: url('https://img.icons8.com/ios-filled/50/FF8300/do-not-disturb-2.png');
+            /* Altera o ícone quando o modo noturno está ativado */
+        }
+
+        /* Adicione esses estilos ao seu CSS existente */
+        body.modo-noturno {
+            background-color: #141414;
+            /* Cor de fundo para o modo noturno */
+            color: #fff;
+            /* Cor do texto para o modo noturno */
+            transition: all 0.4s ease;
+        }
+
+        .modo-noturno .custom-alert.alert-danger {
+            color: #f8d7da;
+            /* Cor do texto de alerta de erro no modo noturno */
+            background-color: #721c24;
+            /* Cor de fundo do alerta de erro no modo noturno */
+            border-color: #f5c6cb;
+            /* Cor da borda do alerta de erro no modo noturno */
+            transition: all 0.4s ease;
+        }
+
+        .modo-noturno .custom-alert.alert-success {
+            color: #fff3cd;
+            /* Cor do texto de alerta de sucesso no modo noturno */
+            background-color: #856404;
+            /* Cor de fundo do alerta de sucesso no modo noturno */
+            border-color: #ffeeba;
+            /* Cor da borda do alerta de sucesso no modo noturno */
+            transition: all 0.4s ease;
+        }
+
+        #modoNoturnoIcon.modo-noturno-transition {
+            transition: all 0.4s ease;
+        }
     </style>
+
+
 </head>
 
 <body>
     <nav>
+        <button id="modoNoturnoBtn" onclick="toggleModoNoturno()">
+            <img id="modoNoturnoIcon" src="https://img.icons8.com/ios/FF8300/summer.png" alt="Modo Noturno Ícone">
+        </button>
+
         <img class="logonav" src="./src/logocetreina.png" alt="Logo do Cetreina">
+
+
     </nav>
 
     <div class="fundo">
@@ -245,27 +369,59 @@
         serviços
     </p>
 
-
     <div class="botoes">
+        <form method="post" action="principal.php" onsubmit="redirectToPrincipal()">
+            <button type="submit" class="btn btn-primary">Importar Dados</button>
+        </form>
+
         <button onclick="redirectToEnvios()">Comunicado</button>
-        <button onclick="redirectToDados()">Carregar Dados</button>
+        <button onclick="redirectToBanco()">Estagiários</button>
         <button onclick="logout()">Logout</button>
+
     </div>
 
-
     <script>
-        function redirectToIndex() {
-            // Verifica se a pessoa está logada antes de redirecionar
-            if (isLoggedIn()) {
-                redirectTo('principal.php');
-            } else {
-                // Redireciona para a página de login caso não esteja logada
-                redirectTo('login.php');
-            }
+
+        // Adicione este script ao seu bloco de script existente
+        function toggleModoNoturno() {
+            const body = document.body;
+            body.classList.toggle('modo-noturno');
+
+        }
+
+        // Adicione este script ao seu bloco de script existente
+        function toggleModoNoturno() {
+            const body = document.body;
+            const modoNoturnoIcon = document.getElementById('modoNoturnoIcon');
+
+            body.classList.toggle('modo-noturno');
+            // Adiciona uma classe de transição para suavizar a mudança de estilo
+            modoNoturnoIcon.classList.add('modo-noturno-transition');
+
+
+            modoNoturnoIcon.src = body.classList.contains('modo-noturno')
+                ? 'https://img.icons8.com/ios/452/do-not-disturb.png' // Ícone quando o modo noturno está ativado
+                : 'https://img.icons8.com/ios/50/FF8300/summer--v1.png'; // Ícone padrão quando o modo noturno está desativado
+            // Aguarda um curto período de tempo antes de remover a classe de transição
+            setTimeout(() => {
+                modoNoturnoIcon.classList.remove('modo-noturno-transition');
+            }, 300); // O mesmo valor que a duração da transição
+            // Verifica se o modo noturno está ativado no localStorage e aplica-o
+            document.addEventListener('DOMContentLoaded', () => {
+                const modoNoturnoAtivado = localStorage.getItem('modoNoturnoAtivado') === 'true';
+
+                if (modoNoturnoAtivado) {
+                    toggleModoNoturno(); // Ativa o modo noturno se estava ativado
+                }
+            });
+        }
+
+        function redirectToBanco() {
+            window.location.href = 'banco.php';
         }
 
         function logout() {
-            window.location.href = 'principal.php';
+            window.location.href = 'login.php';
         }
 
         function redirectToEnvios() {
@@ -273,23 +429,16 @@
             window.location.href = 'envios.php';
         }
 
-        function redirectToDados() {
-            // Redireciona para a página envios.php
-            window.location.href = 'dados.php';
-        }
+        function redirectToPrincipal() {
+            // Obtém o nome da planilha
+            const name = "<?php echo isset($name) ? htmlspecialchars($name) : ''; ?>";
 
-        function redirectToEnvios() {
-            // Redireciona para a página envios.php
-            window.location.href = 'envios.php';
-        }
+            // Adiciona os parâmetros à URL
+            const url = `principal.php?authenticated=true&name=${encodeURIComponent(name)}`;
 
-        function redirectTo(page) {
-            // Redireciona para a página especificada se não estiver nela
-            if (window.location.href.indexOf(page) === -1) {
-                window.location.href = page;
-            }
+            // Atualiza a ação do formulário
+            document.forms[0].action = url;
         }
-
 
         // Recupera o nome completo do usuário da URL
         const fullName = new URLSearchParams(window.location.search).get('name');
@@ -341,7 +490,136 @@
         greetingElement.innerHTML = `${getGreetingByHour(currentHour)}, <span class="name">${firstName}</span>`;
     </script>
 
+    <div class="container mt-5">
+        <?php
 
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            // Substitua 'SEU_API_KEY' pela chave de API do Google Sheets
+            $apiKey = 'AIzaSyDq1_3tOQdeM3besaeg1-O4coztRsL3FZY';
+
+            // ID da planilha do Google Sheets
+            $spreadsheetId = '1WAxnZPqgbTAvqtTampi34xDkL-3-W13mnbIo2ACcIm4';
+
+            // Range específico
+            $range = 'estagiario!A2:C';
+
+            // URL da API do Google Sheets
+            $url = "https://sheets.googleapis.com/v4/spreadsheets/{$spreadsheetId}/values/{$range}?key={$apiKey}";
+
+            // Faz a requisição para obter os dados
+            $response = file_get_contents($url);
+
+            // Converte a resposta JSON para um array associativo
+            $data = json_decode($response, true);
+
+            // Verifica se há dados
+            if (isset($data['values'])) {
+                // Conecta ao seu banco de dados (substitua os detalhes do banco de dados)
+                $servername = "localhost";
+                $username = "root";
+                $password = "";
+                $dbname = "pebit";
+
+                $conn = new mysqli($servername, $username, $password, $dbname);
+
+                // Verifica a conexão
+                if ($conn->connect_error) {
+                    die("Erro na conexão: " . $conn->connect_error);
+                }
+
+                // Mensagem de sucesso ou erro
+                $successMessage = "Dados importados, atualizados ou excluídos com sucesso!";
+                $errorMessage = "";
+
+                // Se a planilha estiver vazia, limpe todo o banco de dados
+                if (empty($data['values'])) {
+                    $truncateSql = "TRUNCATE TABLE estagiarios";
+                    if ($conn->query($truncateSql) === FALSE) {
+                        $errorMessage = "Erro ao limpar o banco de dados: " . $conn->error;
+                    } else {
+                        $successMessage = "Banco de dados limpo com sucesso.";
+                    }
+                } else {
+                    // Obtém todos os e-mails presentes na planilha
+                    $emailsNaPlanilha = array_column($data['values'], 1);
+
+                    // Obtém todos os e-mails presentes no banco de dados
+                    $result = $conn->query("SELECT Email FROM estagiarios");
+                    $emailsNoBanco = array();
+                    while ($row = $result->fetch_assoc()) {
+                        $emailsNoBanco[] = $row['Email'];
+                    }
+
+                    // Identifica e exclui os e-mails que estão no banco de dados, mas não na planilha
+                    $emailsExcluir = array_diff($emailsNoBanco, $emailsNaPlanilha);
+                    foreach ($emailsExcluir as $emailExcluir) {
+                        $excluirSql = "DELETE FROM estagiarios WHERE Email = '$emailExcluir'";
+                        if ($conn->query($excluirSql) === FALSE) {
+                            $errorMessage = "Erro ao excluir dados: " . $conn->error;
+                        } else {
+                            $successMessage .= " $emailExcluir removido do sistema.";
+                        }
+                    }
+
+                    // Itera sobre os dados e insere/atualiza no banco de dados
+                    foreach ($data['values'] as $row) {
+                        // Verifica se a linha possui pelo menos um valor (ignorando linhas vazias ou em branco)
+                        if (!empty(array_filter($row))) {
+                            // Verifica se o array possui pelo menos 3 elementos (índices 0, 1 e 2)
+                            if (count($row) >= 3) {
+                                $nome = $row[0];
+                                $email = $row[1];
+                                $convenio = $row[2];
+
+                                // Verifica se o e-mail já existe no banco de dados
+                                $result = $conn->query("SELECT * FROM estagiarios WHERE Email = '$email'");
+                                if ($result->num_rows > 0) {
+                                    // Se existir, realiza um UPDATE
+                                    $updateSql = "UPDATE estagiarios SET Nome = '$nome', Convenio = '$convenio' WHERE Email = '$email'";
+                                    if ($conn->query($updateSql) === FALSE) {
+                                        $errorMessage = "Erro ao atualizar dados: " . $conn->error;
+                                    } else {
+                                        $successMessage = "$successMessage";
+                                    }
+                                } else {
+                                    // Se não existir, realiza um INSERT
+                                    $insertSql = "INSERT INTO estagiarios (Nome, Email, Convenio) VALUES ('$nome', '$email', '$convenio')";
+                                    if ($conn->query($insertSql) === FALSE) {
+                                        if ($conn->errno == 1062) { // Código de erro para duplicata (pode variar dependendo do MySQL)
+                                            $errorMessage = "Erro: E-mail ou Nome já existente.";
+                                        } else {
+                                            $errorMessage = "Erro ao inserir dados: " . $conn->error;
+                                        }
+                                    } else {
+                                        $successMessage .= " $nome adicionado no sistema.";
+                                    }
+                                }
+                            } else {
+                                // Caso a linha da planilha não tenha todos os elementos esperados, exibe uma mensagem de erro
+                                $errorMessage = "Erro: A linha da planilha não possui todos os elementos esperados.";
+                            }
+                        }
+                    }
+
+                    // Fecha a conexão
+                    $conn->close();
+
+                    // Exibe mensagens
+                    if ($errorMessage !== "") {
+                        echo '<div class="custom-alert alert alert-danger" role="alert">' . $errorMessage . '</div>';
+                    } elseif ($successMessage !== "") {
+                        echo '<div class="custom-alert alert alert-success" role="alert">' . $successMessage . '</div>';
+                    }
+                }
+
+            }
+        }
+
+        ?>
+
+
+
+    </div>
 
 </body>
 

@@ -16,6 +16,15 @@
             height: 100vh;
         }
 
+        nav {
+            text-align: center;
+            margin: 1rem;
+        }
+
+        .logonav {
+            width: 3rem;
+        }
+
         .success-container {
             text-align: center;
             padding: 20px;
@@ -25,15 +34,13 @@
         }
 
         .success-message {
-            color: #4caf50;
+            color: #FF8300;
             font-size: 24px;
             margin-bottom: 20px;
         }
-grg
 
         .return-button {
-            background-color: #3498db;
-            color: #fff;
+            color: #D55D0C;
             padding: 10px 20px;
             font-size: 16px;
             text-decoration: none;
@@ -41,18 +48,24 @@ grg
             transition: background-color 0.3s ease;
             cursor: pointer;
             display: inline-block;
+            outline: none;
+            /* Remove a linha azul do foco */
         }
 
-        .return-button:hover {
-            background-color: #2980b9;
+        .return-button:focus {
+            outline: none;
+            /* Remova a linha azul mesmo ao receber foco (útil para acessibilidade) */
         }
     </style>
 </head>
 
 <body>
     <div class="success-container">
+        <nav>
+            <img class="logonav" src="./src/logocetreina.png" alt="Logo do Cetreina">
+        </nav>
         <div class="success-message">E-mail enviado com sucesso!</div>
-        <a href="principal.php" class="return-button">Voltar para a tela principal</a>
+        <a href="login.php" class="return-button">Voltar para a tela principal</a>
     </div>
 </body>
 

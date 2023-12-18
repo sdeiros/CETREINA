@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <title>Login Page</title>
     <style>
         body {
@@ -111,7 +112,7 @@
 
                     gapi.client.sheets.spreadsheets.values.get({
                         spreadsheetId: '1WAxnZPqgbTAvqtTampi34xDkL-3-W13mnbIo2ACcIm4',
-                        range: 'cadastros!A:C',
+                        range: 'cadastros!A2:C',
                     }).then(response => {
                         console.log('Dados da planilha:', response.result.values);
                         const data = response.result.values;
@@ -125,16 +126,33 @@
                             }
 
                             console.log('Verificando linha:', row);
+
+                            // Adicione logs para verificar os valores
+                            console.log('Email:', email);
+                            console.log('Senha:', password);
+                            console.log('Valor da linha:', row);
+
                             const emailIndex = row.indexOf(email);
                             const passwordIndex = row.indexOf(password);
 
                             if (emailIndex !== -1 && passwordIndex !== -1) {
                                 document.getElementById('error-message').innerText = '';
-                                redirectToWelcomePage(row[0]);
+
+                                // Obtém o nome da planilha usando o índice apropriado (ajuste conforme necessário)
+                                const nameIndex = 0;
+                                const name = row[nameIndex];
+
+                                console.log('Autenticação bem-sucedida!');
+
+                                // Redirecionar para dados.php após a autenticação bem-sucedida
+                                window.location.href = `principal.php?authenticated=true&name=${encodeURIComponent(name)}`;
+
                                 return;
                             }
+
                         }
 
+                        console.log('Autenticação falhou!');
                         document.getElementById('error-message').innerText = 'Email ou senha inválido(s)';
                     }).catch(error => {
                         console.error('Erro ao acessar a planilha:', error.result?.error?.message || error.message);
@@ -142,12 +160,10 @@
                 });
             });
         }
-
-        function redirectToWelcomePage(name) {
-            // Redireciona para a página de boas-vindas passando o nome como parâmetro
-            window.location.href = `principal.php?name=${name}`;
-        }
     </script>
+
+
+
 </body>
 
 </html>
